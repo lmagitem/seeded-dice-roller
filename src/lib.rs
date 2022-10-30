@@ -3,19 +3,37 @@ use rand::prelude::*;
 use rand_seeder::Seeder;
 use rand_pcg::Pcg64;
 
+/// An object that uses a Random Number Generator fed with a seed to generate dice roll results
+/// in a deterministic way.
 pub struct SeededDiceRoller {
     rng: Pcg64
 }
 
 impl SeededDiceRoller {
+    /// Returns a generator initialized with the given seed and step.
+    ///
+    /// # Why two arguments
+    /// The **seed** represents something like the "session" of the run, while the **step**
+    /// represents the name of the task currently at hand.
+    ///
+    /// For example, if we want to generate a dungeon using the player-inputted **seed**
+    /// "water temple", we might create three specific instances of **SeededDiceRoller** using
+    /// "map_gen_shape", "map_gen_walls" and "map_gen_treasures" values for the **step** in order
+    /// to always get the same results for that specific task, no matter how many other tasks
+    /// you might add or remove before them in the future.
+    ///
+    /// It helps keeping seeded generation consistent between versions of your program.
     pub fn new(seed: &str, step: &str) -> Self {
-        Self { rng: Seeder::from(format!("{}{}", step, seed)).make_rng() }
+        Self { rng: Seeder::from(format!("{}_{}", step, seed)).make_rng() }
     }
 
+    /// Returns **true** or **false**.
     pub fn toss_coin(&mut self) -> bool {
         self.rng.gen::<bool>()
     }
 
+    /// Rolls **dice** times a **die_type** sided die, adds an eventual **modifier** and returns
+    /// the result.
     pub fn roll(&mut self, dice: u16, die_type: u16, modifier: i16) -> i32 {
         let mut result = 0;
         let die_type = die_type as i32;
@@ -56,43 +74,43 @@ mod tests {
         let mut rng = SeededDiceRoller::new("seed", "test");
         assert!(rng.roll(1, 6, 0) == 6);
         assert!(rng.roll(3, 6, -5) == 4);
-        assert!(rng.roll(1, 6, 0) == 4);
-        assert!(rng.roll(1, 20, 0) == 2);
-        assert!(rng.roll(1, 6, -15) == -11);
-        assert!(rng.roll(69, 6, 0) == 254);
-        assert!(rng.roll(2, 123, 0) == 200);
+        assert!(rng.roll(1, 6, 0) == 2);
+        assert!(rng.roll(1, 20, 0) == 6);
+        assert!(rng.roll(1, 6, -15) == -9);
+        assert!(rng.roll(69, 6, 0) == 260);
+        assert!(rng.roll(2, 123, 0) == 50);
         assert!(rng.roll(1, 6, 3343) == 3344);
+        assert!(rng.toss_coin() == false);
+        assert!(rng.toss_coin() == true);
         assert!(rng.toss_coin() == true);
         assert!(rng.toss_coin() == false);
         assert!(rng.toss_coin() == false);
-        assert!(rng.toss_coin() == false);
-        assert!(rng.toss_coin() == true);
 
         rng = SeededDiceRoller::new("other_seed", "test");
         assert!(rng.roll(1, 6, 0) == 2);
-        assert!(rng.roll(3, 6, -5) == 3);
-        assert!(rng.roll(1, 6, 0) == 2);
+        assert!(rng.roll(3, 6, -5) == 2);
+        assert!(rng.roll(1, 6, 0) == 5);
         assert!(rng.roll(1, 20, 0) == 18);
-        assert!(rng.roll(1, 6, -15) == -11);
-        assert!(rng.roll(69, 6, 0) == 238);
-        assert!(rng.roll(2, 123, 0) == 120);
-        assert!(rng.roll(1, 6, 3343) == 3345);
+        assert!(rng.roll(1, 6, -15) == -12);
+        assert!(rng.roll(69, 6, 0) == 234);
+        assert!(rng.roll(2, 123, 0) == 57);
+        assert!(rng.roll(1, 6, 3343) == 3344);
         assert!(rng.toss_coin() == true);
-        assert!(rng.toss_coin() == false);
-        assert!(rng.toss_coin() == false);
         assert!(rng.toss_coin() == true);
-        assert!(rng.toss_coin() == false);
+        assert!(rng.toss_coin() == true);
+        assert!(rng.toss_coin() == true);
+        assert!(rng.toss_coin() == true);
 
         rng = SeededDiceRoller::new("other_seed", "step");
-        assert!(rng.roll(1, 6, 0) == 6);
-        assert!(rng.roll(3, 6, -5) == 5);
         assert!(rng.roll(1, 6, 0) == 1);
-        assert!(rng.roll(1, 20, 0) == 7);
-        assert!(rng.roll(1, 6, -15) == -14);
-        assert!(rng.roll(69, 6, 0) == 223);
-        assert!(rng.roll(2, 123, 0) == 130);
-        assert!(rng.roll(1, 6, 3343) == 3349);
-        assert!(rng.toss_coin() == true);
+        assert!(rng.roll(3, 6, -5) == 2);
+        assert!(rng.roll(1, 6, 0) == 4);
+        assert!(rng.roll(1, 20, 0) == 19);
+        assert!(rng.roll(1, 6, -15) == -12);
+        assert!(rng.roll(69, 6, 0) == 269);
+        assert!(rng.roll(2, 123, 0) == 131);
+        assert!(rng.roll(1, 6, 3343) == 3348);
+        assert!(rng.toss_coin() == false);
         assert!(rng.toss_coin() == false);
         assert!(rng.toss_coin() == true);
         assert!(rng.toss_coin() == true);
