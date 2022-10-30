@@ -1,5 +1,5 @@
 [package]
-name = "seeded-dice-roller"
+name = "seeded_dice_roller"
 version = "0.1.0"
 edition = "2021"
 
