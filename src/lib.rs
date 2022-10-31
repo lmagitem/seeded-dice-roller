@@ -10,7 +10,7 @@ pub enum RollMethod {
     PreparedRoll(PreparedRoll),
     /// Uses the given number of dice in order to pick a random result, with increasingly higher
     /// chances to get one from the middle of the list as the value is high.
-    GaussianRoll(usize),
+    GaussianRoll(u16),
     /// Simply rolls against the number of possible results to get a random one.
     SimpleRoll,
 }
@@ -19,9 +19,9 @@ pub enum RollMethod {
 #[derive(Debug)]
 pub struct RollToProcess<T> {
     /// A list of possible results that can be picked at random. Must contain less than 65535 items.
-    possible_results: Vec<WeightedResult<T>>,
+    pub possible_results: Vec<WeightedResult<T>>,
     /// The method with which to pick a desired result.
-    roll_method: RollMethod,
+    pub roll_method: RollMethod,
 }
 
 /// Data allowing to pick a result at random in a list of possible results. The results must
@@ -32,9 +32,9 @@ where
     T: Copy,
 {
     /// A list of possible results that can be picked at random. Must contain less than 65535 items.
-    possible_results: Vec<CopyableWeightedResult<T>>,
+    pub possible_results: Vec<CopyableWeightedResult<T>>,
     /// The method with which to pick a desired result.
-    roll_method: RollMethod,
+    pub roll_method: RollMethod,
 }
 
 /// A result able to be picked at random in a list of possible results. The **weight** is used
@@ -42,13 +42,13 @@ where
 #[derive(Debug)]
 pub struct WeightedResult<T> {
     /// The result that can be selected at random.
-    result: T,
+    pub result: T,
     /// The eventual weight of this result. A higher weight means that the result will be more
     /// likely to be picked in an uniform distribution.
     ///
     /// Or with an example: when using the SimpleRoll [RollMethod], an item with a weight of 5
     /// will have 5 more chances to be selected than an item with a weight of one;
-    weight: usize,
+    pub weight: usize,
 }
 
 /// A result able to be picked at random in a list of possible results. The **weight** is used
@@ -60,36 +60,36 @@ where
     T: Copy,
 {
     /// The result that can be selected at random.
-    result: T,
+    pub result: T,
     /// The eventual weight of this result. A higher weight means that the result will be more
     /// likely to be picked in an uniform distribution.
     ///
     /// Or with an example: when using the SimpleRoll [RollMethod], an item with a weight of 5
     /// will have 5 more chances to be selected than an item with a weight of one;
-    weight: usize,
+    pub weight: usize,
 }
 
 /// Data allowing to roll **dice** times a **die_type** sided die and add an eventual **modifier**.
 #[derive(Debug, Clone, Copy)]
 pub struct PreparedRoll {
     /// The number of dice to roll.
-    dice: usize,
+    pub dice: u16,
     /// The type of dice to roll. It doesn't need to be a "real one". Example: 6-sided dice,
     /// 20-sided dice, 15694-sided dice...
-    die_type: usize,
+    pub die_type: usize,
     /// An eventual modifier to apply to the roll's result.
-    modifier: i32,
+    pub modifier: i32,
 }
 
 /// A temporary struct used for finding which result a dice roll returns.
 #[derive(Debug, Clone, Copy)]
 struct RangedResult {
     /// The index of the result this struct represents.
-    result_index: usize,
+    pub result_index: usize,
     /// The roll must be equal or greater that **min** value. Inclusive.
-    min: i64,
+    pub min: i64,
     /// The roll must be lower that **max** value. Non-inclusive.
-    max: i64,
+    pub max: i64,
 }
 
 /// Uses a Random Number Generator fed with a **seed** to generate dice roll results, booleans
@@ -127,13 +127,83 @@ impl SeededDiceRoller {
         self.rng.gen::<bool>()
     }
 
+    /// Returns a random 8bit unsigned integer.
+    pub fn gen_u8(&mut self) -> u8 {
+        self.rng.gen::<u8>()
+    }
+
+    /// Returns a random 16bit unsigned integer.
+    pub fn gen_u16(&mut self) -> u16 {
+        self.rng.gen::<u16>()
+    }
+
+    /// Returns a random 32bit unsigned integer.
+    pub fn gen_u32(&mut self) -> u32 {
+        self.rng.gen::<u32>()
+    }
+
+    /// Returns a random 64bit unsigned integer.
+    pub fn gen_u64(&mut self) -> u64 {
+        self.rng.gen::<u64>()
+    }
+
+    /// Returns a random 128bit unsigned integer.
+    pub fn gen_u128(&mut self) -> u128 {
+        self.rng.gen::<u128>()
+    }
+
+    /// Returns a random pointer-sized unsigned integer.
+    pub fn gen_usize(&mut self) -> usize {
+        self.rng.gen::<usize>()
+    }
+
+    /// Returns a random 8bit signed integer.
+    pub fn gen_i8(&mut self) -> i8 {
+        self.rng.gen::<i8>()
+    }
+
+    /// Returns a random 16bit signed integer.
+    pub fn gen_i16(&mut self) -> i16 {
+        self.rng.gen::<i16>()
+    }
+
+    /// Returns a random 32bit signed integer.
+    pub fn gen_i32(&mut self) -> i32 {
+        self.rng.gen::<i32>()
+    }
+
+    /// Returns a random 64bit signed integer.
+    pub fn gen_i64(&mut self) -> i64 {
+        self.rng.gen::<i64>()
+    }
+
+    /// Returns a random 128bit signed integer.
+    pub fn gen_i128(&mut self) -> i128 {
+        self.rng.gen::<i128>()
+    }
+
+    /// Returns a random pointer-sized signed integer.
+    pub fn gen_isize(&mut self) -> isize {
+        self.rng.gen::<isize>()
+    }
+
+    /// Returns a random 32bit floating point type.
+    pub fn gen_f32(&mut self) -> f32 {
+        self.rng.gen::<f32>()
+    }
+
+    /// Returns a random 64bit floating point type.
+    pub fn gen_f64(&mut self) -> f64 {
+        self.rng.gen::<f64>()
+    }
+
     /// Rolls **dice** times a **die_type** sided die, adds an eventual **modifier** and returns
     /// the result.
-    pub fn roll(&mut self, dice: usize, die_type: usize, modifier: i32) -> i64 {
+    pub fn roll(&mut self, dice: u16, die_type: usize, modifier: i32) -> i64 {
         let mut result = 0;
         let die_type = die_type as i64;
         for _ in 0..dice {
-            result += (self.rng.gen::<usize>() as i64).abs() % &die_type + 1;
+            result += (self.gen_usize() as i64).abs() % &die_type + 1;
         }
         result += modifier as i64;
         result
@@ -177,12 +247,17 @@ impl SeededDiceRoller {
             1 => Some(0),
             _ => match &to_process.roll_method {
                 RollMethod::PreparedRoll(ref roll) => {
-                    self.process_prepared_roll(&to_process, &length, &roll)
+                    let result = self.process_prepared_roll(&to_process, &length, &roll);
+                    result
                 }
                 RollMethod::GaussianRoll(dice) => {
-                    self.process_gaussian_roll(&to_process, &length, &dice)
+                    let result = self.process_gaussian_roll(&to_process, &length, &dice);
+                    result
                 }
-                RollMethod::SimpleRoll => self.process_simple_roll(&to_process, &length),
+                RollMethod::SimpleRoll => {
+                    let result = self.process_simple_roll(&to_process, &length);
+                    result
+                }
             },
         }
     }
@@ -219,7 +294,7 @@ impl SeededDiceRoller {
         &mut self,
         to_process: &RollToProcess<T>,
         length: &usize,
-        dice: &usize,
+        dice: &u16,
     ) -> Option<usize> {
         // Transform the array so it can be used easily
         let mut choices: Vec<RangedResult> = Vec::new();
@@ -231,7 +306,7 @@ impl SeededDiceRoller {
             &mut choices,
         );
 
-        let max = self.calculate_die_type(to_process);
+        let max = SeededDiceRoller::calculate_die_type(to_process);
         let roll = self.roll(*dice, max, 0);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
 
@@ -252,7 +327,7 @@ impl SeededDiceRoller {
         let mut choices: Vec<RangedResult> = Vec::new();
         self.fill_choices(&to_process, &length, &1, &1, &mut choices);
 
-        let max = self.calculate_die_type(to_process);
+        let max = SeededDiceRoller::calculate_die_type(to_process);
         let roll = self.roll(1, max, 0);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
 
@@ -291,9 +366,33 @@ impl SeededDiceRoller {
         }
     }
 
+    /// Returns a vector of [CopyableWeightedResult] using the given **vec** of values.
+    /// The result can be used in a [CopyableRollToProcess].
+    pub fn to_copyable_possible_results<T: Copy>(vec: Vec<T>) -> Vec<CopyableWeightedResult<T>> {
+        vec.iter()
+            .map(|c| CopyableWeightedResult {
+                result: c.clone(),
+                weight: 1,
+            })
+            .collect()
+    }
+
+    /// Returns a vector of [WeightedResult] using the given **vec** of values.
+    /// The result can be used in a [RollToProcess].
+    pub fn to_possible_results<T>(vec: Vec<T>) -> Vec<WeightedResult<T>> {
+        let mut result = Vec::new();
+        for item in vec {
+            result.push(WeightedResult {
+                result: item,
+                weight: 1,
+            });
+        }
+        result
+    }
+
     /// Adds the weight of every entry in a list **to_process** in order to determine the type
     /// of die that must be rolled to find a desired result.
-    fn calculate_die_type<T>(&self, to_process: &RollToProcess<T>) -> usize {
+    fn calculate_die_type<T>(to_process: &RollToProcess<T>) -> usize {
         let max = to_process
             .possible_results
             .iter()
@@ -309,70 +408,264 @@ mod tests {
     use super::*;
 
     #[test]
-    fn roll_is_within_bounds() {
+    fn dice_roller_is_deterministic() {
         let mut rng = SeededDiceRoller::new("seed", "test");
-        for _ in 0..1000 {
-            let n: i64 = rng.roll(1, 6, 0);
-            assert!(n >= 1);
-            assert!(n <= 6);
+        {
+            assert!(rng.roll(1, 6, 0) == 2);
+            assert!(rng.roll(3, 6, -5) == 8);
+            assert!(rng.roll(1, 6, 0) == 2);
+            assert!(rng.roll(1, 20, 0) == 4);
+            assert!(rng.roll(1, 6, -15) == -9);
+            assert!(rng.roll(69, 6, 0) == 246);
+            assert!(rng.roll(2, 123, 0) == 101);
+            assert!(rng.roll(1, 6, 3343) == 3346);
+            assert!(rng.gen_bool() == false);
+            assert!(rng.gen_u8() == 188);
+            assert!(rng.gen_u16() == 45209);
+            assert!(rng.gen_u32() == 2067204665);
+            assert!(rng.gen_u64() == 11144615613207554777);
+            assert!(rng.gen_u128() == 326911416680500363065339602289182768569);
+            assert!(rng.gen_usize() == 8269465146262660349);
+            assert!(rng.gen_i8() == 83);
+            assert!(rng.gen_i16() == 3067);
+            assert!(rng.gen_i32() == -1171247657);
+            assert!(rng.gen_i64() == 9108059218017983344);
+            assert!(rng.gen_i128() == 146530613037906103918089470235257735612);
+            assert!(rng.gen_isize() == 2479790373172492566);
+            assert!(rng.gen_f32() == 0.9228384);
+            assert!(rng.gen_f64() == 0.8631162799734914);
+
+            assert!("g".eq(rng
+                .get_result(&CopyableRollToProcess {
+                    possible_results: SeededDiceRoller::to_copyable_possible_results(vec![
+                        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"
+                    ]),
+                    roll_method: RollMethod::SimpleRoll,
+                })
+                .unwrap()));
         }
-        for _ in 0..1000 {
-            let n: i64 = rng.roll(3, 6, 0);
-            assert!(n >= 3);
-            assert!(n <= 18);
+        rng = SeededDiceRoller::new("other_seed", "test");
+        {
+            assert!(rng.roll(1, 6, 0) == 4);
+            assert!(rng.roll(3, 6, -5) == 4);
+            assert!(rng.roll(1, 6, 0) == 3);
+            assert!(rng.roll(1, 20, 0) == 4);
+            assert!(rng.roll(1, 6, -15) == -10);
+            assert!(rng.roll(69, 6, 0) == 244);
+            assert!(rng.roll(2, 123, 0) == 171);
+            assert!(rng.roll(1, 6, 3343) == 3348);
+            assert!(rng.gen_bool() == true);
+            assert!(rng.gen_u8() == 82);
+            assert!(rng.gen_u16() == 27159);
+            assert!(rng.gen_u32() == 3180098725);
+            assert!(rng.gen_u64() == 11552742574431662508);
+            assert!(rng.gen_u128() == 196627661076901716217737966822153854526);
+            assert!(rng.gen_usize() == 1997277166238086139);
+            assert!(rng.gen_i8() == 45);
+            assert!(rng.gen_i16() == -22194);
+            assert!(rng.gen_i32() == -1765316073);
+            assert!(rng.gen_i64() == 7982030035740135755);
+            assert!(rng.gen_i128() == 130008835046757806841833196450514227059);
+            assert!(rng.gen_isize() == -3501112453948772746);
+            assert!(rng.gen_f32() == 0.9940159);
+            assert!(rng.gen_f64() == 0.45617011270821706);
+
+            assert!("f".eq(rng
+                .get_result(&CopyableRollToProcess {
+                    possible_results: SeededDiceRoller::to_copyable_possible_results(vec![
+                        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"
+                    ]),
+                    roll_method: RollMethod::SimpleRoll,
+                })
+                .unwrap()));
         }
-        for _ in 0..1000 {
-            let n: i64 = rng.roll(1, 20, 0);
-            assert!(n >= 1);
-            assert!(n <= 20);
+        rng = SeededDiceRoller::new("other_seed", "step");
+        {
+            assert!(rng.roll(1, 6, 0) == 5);
+            assert!(rng.roll(3, 6, -5) == 4);
+            assert!(rng.roll(1, 6, 0) == 6);
+            assert!(rng.roll(1, 20, 0) == 19);
+            assert!(rng.roll(1, 6, -15) == -10);
+            assert!(rng.roll(69, 6, 0) == 209);
+            assert!(rng.roll(2, 123, 0) == 106);
+            assert!(rng.roll(1, 6, 3343) == 3346);
+            assert!(rng.gen_bool() == false);
+            assert!(rng.gen_u8() == 162);
+            assert!(rng.gen_u16() == 34315);
+            assert!(rng.gen_u32() == 2687893072);
+            assert!(rng.gen_u64() == 10068043339616645489);
+            assert!(rng.gen_u128() == 78293060686096732239048405502667573500);
+            assert!(rng.gen_usize() == 15847822118157400675);
+            assert!(rng.gen_i8() == -83);
+            assert!(rng.gen_i16() == 683);
+            assert!(rng.gen_i32() == -585801794);
+            assert!(rng.gen_i64() == -1818745056280883793);
+            assert!(rng.gen_i128() == 162224135727382922470578647495526568637);
+            assert!(rng.gen_isize() == -6539258215208328255);
+            assert!(rng.gen_f32() == 0.6179796);
+            assert!(rng.gen_f64() == 0.22569667223081946);
+
+            assert!("d".eq(rng
+                .get_result(&CopyableRollToProcess {
+                    possible_results: SeededDiceRoller::to_copyable_possible_results(vec![
+                        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"
+                    ]),
+                    roll_method: RollMethod::SimpleRoll,
+                })
+                .unwrap()));
         }
     }
 
     #[test]
-    fn generator_is_deterministic() {
+    fn roll_is_within_bounds() {
         let mut rng = SeededDiceRoller::new("seed", "test");
-        assert!(rng.roll(1, 6, 0) == 2);
-        assert!(rng.roll(3, 6, -5) == 8);
-        assert!(rng.roll(1, 6, 0) == 2);
-        assert!(rng.roll(1, 20, 0) == 4);
-        assert!(rng.roll(1, 6, -15) == -9);
-        assert!(rng.roll(69, 6, 0) == 246);
-        assert!(rng.roll(2, 123, 0) == 101);
-        assert!(rng.roll(1, 6, 3343) == 3346);
-        assert!(rng.gen_bool() == false);
-        assert!(rng.gen_bool() == true);
-        assert!(rng.gen_bool() == true);
-        assert!(rng.gen_bool() == false);
-        assert!(rng.gen_bool() == false);
+        for _ in 0..1000 {
+            let n: i64 = rng.roll(1, 6, 0);
+            assert!(n >= 1 && n <= 6);
+        }
+        for _ in 0..1000 {
+            let n: i64 = rng.roll(3, 6, 0);
+            assert!(n >= 3 && n <= 18);
+        }
+        for _ in 0..1000 {
+            let n: i64 = rng.roll(1, 20, 0);
+            assert!(n >= 1 && n <= 20);
+        }
+    }
 
-        rng = SeededDiceRoller::new("other_seed", "test");
-        assert!(rng.roll(1, 6, 0) == 4);
-        assert!(rng.roll(3, 6, -5) == 4);
-        assert!(rng.roll(1, 6, 0) == 3);
-        assert!(rng.roll(1, 20, 0) == 4);
-        assert!(rng.roll(1, 6, -15) == -10);
-        assert!(rng.roll(69, 6, 0) == 244);
-        assert!(rng.roll(2, 123, 0) == 171);
-        assert!(rng.roll(1, 6, 3343) == 3348);
-        assert!(rng.gen_bool() == true);
-        assert!(rng.gen_bool() == true);
-        assert!(rng.gen_bool() == true);
-        assert!(rng.gen_bool() == true);
-        assert!(rng.gen_bool() == true);
+    #[test]
+    fn roll_prepared_gives_same_results_as_roll() {
+        let mut rng_one = SeededDiceRoller::new("seed", "test");
+        let mut rng_two = SeededDiceRoller::new("seed", "test");
+        let mut n_one: i64 = rng_one.roll(1, 6, 0);
+        let mut n_two: i64 = rng_two.roll_prepared(&PreparedRoll {
+            dice: 1,
+            die_type: 6,
+            modifier: 0,
+        });
+        assert!(n_one == n_two);
+        n_one = rng_one.roll(3, 6, -4);
+        n_two = rng_two.roll_prepared(&PreparedRoll {
+            dice: 3,
+            die_type: 6,
+            modifier: -4,
+        });
+        assert!(n_one == n_two);
+        n_one = rng_one.roll(20, 100, -444);
+        n_two = rng_two.roll_prepared(&PreparedRoll {
+            dice: 20,
+            die_type: 100,
+            modifier: -444,
+        });
+        assert!(n_one == n_two);
+    }
 
-        rng = SeededDiceRoller::new("other_seed", "step");
-        assert!(rng.roll(1, 6, 0) == 5);
-        assert!(rng.roll(3, 6, -5) == 4);
-        assert!(rng.roll(1, 6, 0) == 6);
-        assert!(rng.roll(1, 20, 0) == 19);
-        assert!(rng.roll(1, 6, -15) == -10);
-        assert!(rng.roll(69, 6, 0) == 209);
-        assert!(rng.roll(2, 123, 0) == 106);
-        assert!(rng.roll(1, 6, 3343) == 3346);
-        assert!(rng.gen_bool() == false);
-        assert!(rng.gen_bool() == false);
-        assert!(rng.gen_bool() == true);
-        assert!(rng.gen_bool() == true);
-        assert!(rng.gen_bool() == false);
+    #[test]
+    fn get_result_returns_a_random_result() {
+        let mut rng = SeededDiceRoller::new("seed", "test");
+        for _ in 0..1000 {
+            assert!(vec!["a", "b", "c", "d"].contains(
+                &rng.get_result(&CopyableRollToProcess {
+                    possible_results: SeededDiceRoller::to_copyable_possible_results(vec![
+                        "a", "b", "c", "d"
+                    ]),
+                    roll_method: RollMethod::PreparedRoll(PreparedRoll {
+                        dice: 2,
+                        die_type: 6,
+                        modifier: -3
+                    }),
+                })
+                .unwrap()
+            ));
+        }
+        for _ in 0..1000 {
+            assert!(vec!["a", "b", "c", "d"].contains(
+                &rng.get_result(&CopyableRollToProcess {
+                    possible_results: SeededDiceRoller::to_copyable_possible_results(vec![
+                        "a", "b", "c", "d"
+                    ]),
+                    roll_method: RollMethod::GaussianRoll(4),
+                })
+                .unwrap()
+            ));
+        }
+        for _ in 0..1000 {
+            assert!(vec!["a", "b", "c", "d"].contains(
+                &rng.get_result(&CopyableRollToProcess {
+                    possible_results: SeededDiceRoller::to_copyable_possible_results(vec![
+                        "a", "b", "c", "d"
+                    ]),
+                    roll_method: RollMethod::SimpleRoll,
+                })
+                .unwrap()
+            ));
+        }
+    }
+
+    #[test]
+    fn get_result_doesnt_fail_out_of_bounds() {
+        let mut rng = SeededDiceRoller::new("seed", "test");
+        assert!("a".eq(rng
+            .get_result(&CopyableRollToProcess {
+                possible_results: SeededDiceRoller::to_copyable_possible_results(vec!["a", "b"]),
+                roll_method: RollMethod::PreparedRoll(PreparedRoll {
+                    dice: 0,
+                    die_type: 0,
+                    modifier: i32::MIN
+                }),
+            })
+            .unwrap()));
+        assert!("b".eq(rng
+            .get_result(&CopyableRollToProcess {
+                possible_results: SeededDiceRoller::to_copyable_possible_results(vec!["a", "b"]),
+                roll_method: RollMethod::PreparedRoll(PreparedRoll {
+                    dice: u16::MAX,
+                    die_type: usize::MAX,
+                    modifier: i32::MAX
+                }),
+            })
+            .unwrap()));
+    }
+
+    #[test]
+    fn get_result_index_returns_a_random_index() {
+        let mut rng = SeededDiceRoller::new("seed", "test");
+        for _ in 0..1000 {
+            assert!(vec![0, 1, 2, 3, 4, 5, 6, 7].contains(
+                &rng.get_result_index(&RollToProcess {
+                    possible_results: SeededDiceRoller::to_possible_results(vec![
+                        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"
+                    ]),
+                    roll_method: RollMethod::PreparedRoll(PreparedRoll {
+                        dice: 2,
+                        die_type: 6,
+                        modifier: -3
+                    }),
+                })
+                .unwrap()
+            ));
+        }
+        for _ in 0..1000 {
+            assert!(vec![0, 1, 2, 3].contains(
+                &rng.get_result_index(&RollToProcess {
+                    possible_results: SeededDiceRoller::to_possible_results(vec![
+                        "a", "b", "c", "d"
+                    ]),
+                    roll_method: RollMethod::GaussianRoll(3),
+                })
+                .unwrap()
+            ));
+        }
+        for _ in 0..1000 {
+            assert!(vec![0, 1, 2, 3].contains(
+                &rng.get_result_index(&RollToProcess {
+                    possible_results: SeededDiceRoller::to_possible_results(vec![
+                        "a", "b", "c", "d"
+                    ]),
+                    roll_method: RollMethod::SimpleRoll,
+                })
+                .unwrap()
+            ));
+        }
     }
 }
