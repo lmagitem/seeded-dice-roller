@@ -1,4 +1,5 @@
 #![warn(clippy::all, clippy::pedantic)]
+use log::*;
 use rand::prelude::*;
 use rand_pcg::Pcg64;
 use rand_seeder::Seeder;
@@ -124,77 +125,107 @@ impl SeededDiceRoller {
 
     /// Returns **true** or **false**.
     pub fn gen_bool(&mut self) -> bool {
-        self.rng.gen::<bool>()
+        let gen = self.rng.gen::<bool>();
+        trace!("gen_bool: {:?}", gen);
+        gen
     }
 
     /// Returns a random 8bit unsigned integer.
     pub fn gen_u8(&mut self) -> u8 {
-        self.rng.gen::<u8>()
+        let gen = self.rng.gen::<u8>();
+        trace!("gen_u8: {:?}", gen);
+        gen
     }
 
     /// Returns a random 16bit unsigned integer.
     pub fn gen_u16(&mut self) -> u16 {
-        self.rng.gen::<u16>()
+        let gen = self.rng.gen::<u16>();
+        trace!("gen_u16: {:?}", gen);
+        gen
     }
 
     /// Returns a random 32bit unsigned integer.
     pub fn gen_u32(&mut self) -> u32 {
-        self.rng.gen::<u32>()
+        let gen = self.rng.gen::<u32>();
+        trace!("gen_u32: {:?}", gen);
+        gen
     }
 
     /// Returns a random 64bit unsigned integer.
     pub fn gen_u64(&mut self) -> u64 {
-        self.rng.gen::<u64>()
+        let gen = self.rng.gen::<u64>();
+        trace!("gen_u64: {:?}", gen);
+        gen
     }
 
     /// Returns a random 128bit unsigned integer.
     pub fn gen_u128(&mut self) -> u128 {
-        self.rng.gen::<u128>()
+        let gen = self.rng.gen::<u128>();
+        trace!("gen_u128: {:?}", gen);
+        gen
     }
 
     /// Returns a random pointer-sized unsigned integer.
     pub fn gen_usize(&mut self) -> usize {
-        self.rng.gen::<usize>()
+        let gen = self.rng.gen::<usize>();
+        trace!("gen_usize: {:?}", gen);
+        gen
     }
 
     /// Returns a random 8bit signed integer.
     pub fn gen_i8(&mut self) -> i8 {
-        self.rng.gen::<i8>()
+        let gen = self.rng.gen::<i8>();
+        trace!("gen_i8: {:?}", gen);
+        gen
     }
 
     /// Returns a random 16bit signed integer.
     pub fn gen_i16(&mut self) -> i16 {
-        self.rng.gen::<i16>()
+        let gen = self.rng.gen::<i16>();
+        trace!("gen_i16: {:?}", gen);
+        gen
     }
 
     /// Returns a random 32bit signed integer.
     pub fn gen_i32(&mut self) -> i32 {
-        self.rng.gen::<i32>()
+        let gen = self.rng.gen::<i32>();
+        trace!("gen_i32: {:?}", gen);
+        gen
     }
 
     /// Returns a random 64bit signed integer.
     pub fn gen_i64(&mut self) -> i64 {
-        self.rng.gen::<i64>()
+        let gen = self.rng.gen::<i64>();
+        trace!("gen_i64: {:?}", gen);
+        gen
     }
 
     /// Returns a random 128bit signed integer.
     pub fn gen_i128(&mut self) -> i128 {
-        self.rng.gen::<i128>()
+        let gen = self.rng.gen::<i128>();
+        trace!("gen_i128: {:?}", gen);
+        gen
     }
 
     /// Returns a random pointer-sized signed integer.
     pub fn gen_isize(&mut self) -> isize {
-        self.rng.gen::<isize>()
+        let gen = self.rng.gen::<isize>();
+        trace!("gen_isize: {:?}", gen);
+        gen
     }
 
     /// Returns a random 32bit floating point type.
     pub fn gen_f32(&mut self) -> f32 {
-        self.rng.gen::<f32>()
+        let gen = self.rng.gen::<f32>();
+        trace!("gen_f32: {:?}", gen);
+        gen
     }
 
     /// Returns a random 64bit floating point type.
     pub fn gen_f64(&mut self) -> f64 {
-        self.rng.gen::<f64>()
+        let gen = self.rng.gen::<f64>();
+        trace!("gen_f64: {:?}", gen);
+        gen
     }
 
     /// Rolls **dice** times a **die_type** sided die, adds an eventual **modifier** and returns
@@ -206,6 +237,14 @@ impl SeededDiceRoller {
             result += (self.gen_usize() as i64).abs() % &die_type + 1;
         }
         result += modifier as i64;
+
+        trace!(
+            "roll: {:?}d{:?}+{:?} = {:?}",
+            dice,
+            die_type,
+            modifier,
+            result
+        );
         result
     }
 
@@ -267,20 +306,22 @@ impl SeededDiceRoller {
         &mut self,
         to_process: &RollToProcess<T>,
         length: &usize,
-        roll: &PreparedRoll,
+        prepared_roll: &PreparedRoll,
     ) -> Option<usize> {
         // Transform the array so it can be used easily
         let mut choices: Vec<RangedResult> = Vec::new();
         self.fill_choices(
             &to_process,
             &length,
-            &(roll.clone().dice as i64),
+            &(prepared_roll.clone().dice as i64),
             &1,
             &mut choices,
         );
+        trace!("process_prepared_roll - choices: {:?}", choices);
 
-        let roll = self.roll_prepared(roll);
+        let roll = self.roll_prepared(prepared_roll);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
+        trace!("process_prepared_roll - result: {:?}", result);
 
         match result {
             Some(ranged_result) => Some(ranged_result.result_index),
@@ -305,6 +346,7 @@ impl SeededDiceRoller {
             &(dice.clone() as i64),
             &mut choices,
         );
+        trace!("process_gaussian_roll - choices: {:?}", choices);
 
         let max = SeededDiceRoller::calculate_die_type(to_process);
         // Adds a modifier to avoid getting results skewed towards the beginning or the end of the set
@@ -316,6 +358,7 @@ impl SeededDiceRoller {
             });
         let roll = self.roll(*dice, max, modifier);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
+        trace!("process_gaussian_roll - result: {:?}", result);
 
         match result {
             Some(ranged_result) => Some(ranged_result.result_index),
@@ -333,10 +376,12 @@ impl SeededDiceRoller {
         // Transform the array so it can be used easily
         let mut choices: Vec<RangedResult> = Vec::new();
         self.fill_choices(&to_process, &length, &1, &1, &mut choices);
+        trace!("process_simple_roll - choices: {:?}", choices);
 
         let max = SeededDiceRoller::calculate_die_type(to_process);
         let roll = self.roll(1, max, 0);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
+        trace!("process_simple_roll - result: {:?}", result);
 
         match result {
             Some(ranged_result) => Some(ranged_result.result_index),
