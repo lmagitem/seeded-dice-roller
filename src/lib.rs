@@ -307,7 +307,14 @@ impl SeededDiceRoller {
         );
 
         let max = SeededDiceRoller::calculate_die_type(to_process);
-        let roll = self.roll(*dice, max, 0) + ((max / 2) as i64);
+        // Adds a modifier to avoid getting results skewed towards the beginning or the end of the set
+        let modifier = (dice / 2) as i32
+            + (if (dice % 2 == 0) && self.gen_bool() {
+                -1
+            } else {
+                0
+            });
+        let roll = self.roll(*dice, max, modifier);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
 
         match result {
