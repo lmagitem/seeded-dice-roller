@@ -234,12 +234,12 @@ impl SeededDiceRoller {
         let mut result = 0;
         let die_type = die_type as i64;
         for _ in 0..dice {
-            result += (self.gen_usize() as i64).abs() % &die_type + 1;
+            result += (self.rng.gen::<usize>() as i64).abs() % &die_type + 1;
         }
         result += modifier as i64;
 
         trace!(
-            "roll: {:?}d{:?}+{:?} = {:?}",
+            "roll: {:?}d{:?}+({:?}) = {:?}",
             dice,
             die_type,
             modifier,
