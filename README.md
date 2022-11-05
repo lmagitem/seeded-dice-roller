@@ -13,14 +13,14 @@ The seed is split into two parts, the **seed** proper and a "**step**". The **se
 
 For example, if we want to generate a dungeon using the player-inputted **seed** "water temple", we might create three specific instances of **SeededDiceRoller** using "map_gen_shape", "map_gen_walls" and "map_gen_treasures" values for the **step** in order to always get the same results for those specific tasks, no matter how many other tasks you might add or remove before them in the future.
 
-## Usage example
+## Examples
 ### Dice rolls
 ```rust
 use seeded_dice_roller::*;
 
 #[test]
 fn doc_test_dice_rolls() {
- 	let mut rng = SeededDiceRoller::new("seed", "step");
+     let mut rng = SeededDiceRoller::new("seed", "step");
 
     assert_eq!(rng.roll(1, 6, 0), 6);
     assert_eq!(rng.roll(3, 6, -5), 1);
@@ -36,11 +36,11 @@ use seeded_dice_roller::*;
 
 #[test]
 fn doc_test_dice_rolls() {
-	let mut rng = seeded_dice_roller::SeededDiceRoller::new("seed", "step");
+    let mut rng = seeded_dice_roller::SeededDiceRoller::new("seed", "step");
 
-	let possible_results = SeededDiceRoller::to_copyable_possible_results(vec![
-	    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"
-	]);
+    let possible_results = SeededDiceRoller::to_copyable_possible_results(vec![
+        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"
+    ]);
     let result = rng.get_result(&CopyableRollToProcess {
                                     possible_results: possible_results.clone(),
                                     roll_method: RollMethod::PreparedRoll(PreparedRoll {
@@ -60,11 +60,11 @@ use seeded_dice_roller::*;
 
 #[test]
 fn doc_test_dice_rolls() {
-	let mut rng = seeded_dice_roller::SeededDiceRoller::new("seed", "step");
+    let mut rng = seeded_dice_roller::SeededDiceRoller::new("seed", "step");
 
-	let possible_results = SeededDiceRoller::to_copyable_possible_results(vec![
-	    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"
-	]);
+    let possible_results = SeededDiceRoller::to_copyable_possible_results(vec![
+        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"
+    ]);
     let result = rng.get_result(&CopyableRollToProcess {
                                     possible_results: possible_results.clone(),
                                     roll_method: RollMethod::GaussianRoll(5),
@@ -80,11 +80,11 @@ use seeded_dice_roller::*;
 
 #[test]
 fn doc_test_dice_rolls() {
-	let mut rng = seeded_dice_roller::SeededDiceRoller::new("seed", "step");
+    let mut rng = seeded_dice_roller::SeededDiceRoller::new("seed", "step");
 
-	let possible_results = SeededDiceRoller::to_copyable_possible_results(vec![
-	    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"
-	]);
+    let possible_results = SeededDiceRoller::to_copyable_possible_results(vec![
+        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"
+    ]);
     let result = rng.get_result(&CopyableRollToProcess {
                                     possible_results: possible_results.clone(),
                                     roll_method: RollMethod::SimpleRoll,
@@ -100,7 +100,7 @@ use seeded_dice_roller::*;
 
 #[test]
 fn doc_test_dice_rolls() {
-	let mut rng = seeded_dice_roller::SeededDiceRoller::new("seed", "step");
+    let mut rng = seeded_dice_roller::SeededDiceRoller::new("seed", "step");
 
     let weighted_set = vec![
         CopyableWeightedResult { result: "a", weight: 5 },
