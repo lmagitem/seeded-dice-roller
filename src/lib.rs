@@ -168,7 +168,7 @@ impl<T> Display for RollToProcess<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "RollToProcess({} choices, method: {})",
+            "RollToProcess {{ {} choices, method: {} }}",
             self.possible_results.len(),
             self.roll_method
         )
@@ -192,8 +192,8 @@ impl<T: Copy + std::fmt::Debug> Display for CopyableRollToProcess<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "CopyableRollToProcess({} choices, method: {})",
-            self.possible_results.len(),
+            "CopyableRollToProcess {{ choices: {:?}, method: {} }}",
+            self.possible_results,
             self.roll_method
         )
     }
@@ -215,7 +215,7 @@ pub struct WeightedResult<T> {
 
 impl<T> Display for WeightedResult<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "WeightedResult(weight: {})", self.weight)
+        write!(f, "{{ result, weight: {} }}", self.weight)
     }
 }
 
@@ -241,7 +241,7 @@ impl<T: Copy + std::fmt::Debug> Display for CopyableWeightedResult<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "CopyableWeightedResult(result: {:?}, weight: {})",
+            "{{ result: {:?}, weight: {} }}",
             self.result, self.weight
         )
     }
@@ -290,7 +290,7 @@ impl Display for RangedResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "RangedResult(i: {}, min: {}, max: {})",
+            "{{ result_index: {}, min: {}, max: {} }}",
             self.result_index, self.min, self.max
         )
     }
@@ -529,7 +529,7 @@ impl SeededDiceRoller {
 
         let roll = self.roll_prepared(prepared_roll);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
-        trace!("process_prepared_roll - result: {:?}", result);
+        trace!("result: {:?}", result);
 
         match result {
             Some(ranged_result) => Some(ranged_result.result_index),
@@ -565,7 +565,7 @@ impl SeededDiceRoller {
             });
         let roll = self.roll(*dice, max, modifier);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
-        trace!("process_gaussian_roll - result: {:?}", result);
+        trace!("result: {:?}", result);
 
         match result {
             Some(ranged_result) => Some(ranged_result.result_index),
@@ -587,7 +587,7 @@ impl SeededDiceRoller {
         let max = SeededDiceRoller::calculate_die_type(to_process);
         let roll = self.roll(1, max, 0);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
-        trace!("process_simple_roll - result: {:?}", result);
+        trace!("result: {:?}", result);
 
         match result {
             Some(ranged_result) => Some(ranged_result.result_index),
@@ -622,7 +622,7 @@ impl SeededDiceRoller {
                 max,
             })
         }
-        trace!("fill_choices - choices: {:?}", choices);
+        trace!("choices: {:?}", choices);
     }
 
     /// Returns a vector of [CopyableWeightedResult] using the given **vec** of values.
