@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 description = "A dice roller using a seed to give deterministic results."
 license = "MIT"
+repository = "https://github.com/lmagitem/seeded-dice-roller"
+keywords = ["gamedev", "rng", "seed", "dice", "random"]
+categories = ["game-development"]
 
 [dependencies]
 log = "0.4.17"
@@ -11,3 +14,4 @@ rand = "0.8.5"
 rand_pcg = "0.3.1"
 rand_seeder = "0.2.3"
 serde = { version = "1.0.147", features = ["derive"] }
+smart-default = "0.6.0"

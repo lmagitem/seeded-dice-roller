@@ -1,12 +1,139 @@
+//! # Seeded Dice Roller
+//! SeededDiceRoller is, as its name implies, a dice roller using a seed to give pseudo-random deterministic results.
+//!
+//! In other words, it returns "random" results, which will always be the same if you use the same seed and call the same methods in the
+//! same order.
+//!
+//! ## How does it work
+//! You generate a Dice Roller using a seed, then you can use it to make dice rolls, generate random numbers or booleans, or select a
+//! specific result in an array of possible choices using either a predefined dice roll, a gaussian distribution or a simple pick at random.
+//!
+//! It is also possible to give weight to the various choices in order to multiply their chances to be selected.
+//!
+//! ## Seed
+//! The seed is split into two parts, the **seed** proper and a "**step**". The **seed** represents something like the "session" of the run,
+//! while the **step** represents the name of the task currently at hand. The idea is to keep seeded generation consistent between versions
+//! of your program.
+//!
+//! For example, if we want to generate a dungeon using the player-inputted **seed** "water temple", we might create three specific
+//! instances of **SeededDiceRoller** using "map_gen_shape", "map_gen_walls" and "map_gen_treasures" values for the **step** in order to
+//! always get the same results for those specific tasks, no matter how many other tasks you might add or remove before them in the future.
+//!
+//! ## Examples
+//! ### Dice rolls
+//! ```rust
+//! # use seeded_dice_roller::*;
+//! #
+//! # #[test]
+//! # fn doc_test_dice_rolls() {
+//! 	let mut rng = SeededDiceRoller::new("seed", "step");
+//!
+//!     assert_eq!(rng.roll(1, 6, 0), 6);
+//!     assert_eq!(rng.roll(3, 6, -5), 1);
+//!     assert_eq!(rng.roll(3, 6, -5), 8);
+//! # }
+//! ```
+//!
+//! ### Random picks
+//! ###### Picks a result using a predefined roll type
+//! ```rust
+//! # use seeded_dice_roller::*;
+//! #
+//! # #[test]
+//! # fn doc_test_dice_rolls() {
+//! 	let mut rng = seeded_dice_roller::SeededDiceRoller::new("seed", "step");
+//!
+//! 	let possible_results = SeededDiceRoller::to_copyable_possible_results(vec![
+//! 	    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"
+//! 	]);
+//!     let result = rng.get_result(&CopyableRollToProcess {
+//!                                     possible_results: possible_results.clone(),
+//!                                     roll_method: RollMethod::PreparedRoll(PreparedRoll {
+//!                                         dice: 2,
+//!                                         die_type: 6,
+//!                                         modifier: 0
+//!                                     }),
+//!                                 }).unwrap();
+//!
+//!     assert_eq!(result, "g");
+//! # }
+//! ```
+//!
+//! ###### Picks a result with higher chances to get one from the middle of the array
+//! ```rust
+//! # use seeded_dice_roller::*;
+//! #
+//! # #[test]
+//! # fn doc_test_dice_rolls() {
+//! 	let mut rng = seeded_dice_roller::SeededDiceRoller::new("seed", "step");
+//!
+//! 	let possible_results = SeededDiceRoller::to_copyable_possible_results(vec![
+//! 	    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"
+//! 	]);
+//!     let result = rng.get_result(&CopyableRollToProcess {
+//!                                     possible_results: possible_results.clone(),
+//!                                     roll_method: RollMethod::GaussianRoll(5),
+//!                                 }).unwrap();
+//!
+//!     assert_eq!(result, "e");
+//! # }
+//! ```
+//!
+//! ###### Picks a result randomly, each choice has an equal chance to be selected
+//! ```rust
+//! # use seeded_dice_roller::*;
+//! #
+//! # #[test]
+//! # fn doc_test_dice_rolls() {
+//! 	let mut rng = seeded_dice_roller::SeededDiceRoller::new("seed", "step");
+//!
+//! 	let possible_results = SeededDiceRoller::to_copyable_possible_results(vec![
+//! 	    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"
+//! 	]);
+//!     let result = rng.get_result(&CopyableRollToProcess {
+//!                                     possible_results: possible_results.clone(),
+//!                                     roll_method: RollMethod::SimpleRoll,
+//!                                 }).unwrap();
+//!
+//!     assert_eq!(result, "c");
+//! # }
+//! ```
+//!
+//! ###### Picks a result randomly, "a" is 5 times more likely to be selected than "b" or "c"
+//! ```rust
+//! # use seeded_dice_roller::*;
+//! #
+//! # #[test]
+//! # fn doc_test_dice_rolls() {
+//! 	let mut rng = seeded_dice_roller::SeededDiceRoller::new("seed", "step");
+//!
+//!     let weighted_set = vec![
+//!         CopyableWeightedResult { result: "a", weight: 5 },
+//!         CopyableWeightedResult { result: "b", weight: 1 },
+//!         CopyableWeightedResult { result: "c", weight: 1 },
+//!     ];
+//!     let result = rng.get_result(&CopyableRollToProcess {
+//!                                     possible_results: weighted_set,
+//!                                     roll_method: RollMethod::SimpleRoll,
+//!                                 }).unwrap();
+//!
+//!     assert_eq!(result, "c");
+//! # }
+//! ```
+
 #![warn(clippy::all, clippy::pedantic)]
 use log::*;
 use rand::prelude::*;
 use rand_pcg::Pcg64;
 use rand_seeder::Seeder;
 use serde::{Deserialize, Serialize};
+use smart_default::SmartDefault;
+use std::fmt::Display;
 
 /// Enum used to know how to determine the result of a random pick in a list of possible results.
-#[derive(Debug, PartialEq, PartialOrd, Clone, Copy, Serialize, Deserialize)]
+#[derive(
+    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, SmartDefault, Serialize, Deserialize,
+)]
 pub enum RollMethod {
     /// Uses a prepared roll ("**dice** D **die_type** + **modifier**").
     PreparedRoll(PreparedRoll),
@@ -14,11 +141,22 @@ pub enum RollMethod {
     /// chances to get one from the middle of the list as the value is high.
     GaussianRoll(u16),
     /// Simply rolls against the number of possible results to get a random one.
+    #[default]
     SimpleRoll,
 }
 
+impl Display for RollMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RollMethod::PreparedRoll(roll) => write!(f, "PreparedRoll({})", roll),
+            RollMethod::GaussianRoll(n) => write!(f, "GaussianRoll({})", n),
+            RollMethod::SimpleRoll => write!(f, "SimpleRoll"),
+        }
+    }
+}
+
 /// Data allowing to pick a result at random in a list of possible results.
-#[derive(Debug)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct RollToProcess<T> {
     /// A list of possible results that can be picked at random.
     pub possible_results: Vec<WeightedResult<T>>,
@@ -26,12 +164,23 @@ pub struct RollToProcess<T> {
     pub roll_method: RollMethod,
 }
 
+impl<T> Display for RollToProcess<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "RollToProcess({} choices, method: {})",
+            self.possible_results.len(),
+            self.roll_method
+        )
+    }
+}
+
 /// Data allowing to pick a result at random in a list of possible results. The results must
 /// be copyable.
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CopyableRollToProcess<T>
 where
-    T: Copy,
+    T: Copy + std::fmt::Debug,
 {
     /// A list of possible results that can be picked at random.
     pub possible_results: Vec<CopyableWeightedResult<T>>,
@@ -39,9 +188,20 @@ where
     pub roll_method: RollMethod,
 }
 
+impl<T: Copy + std::fmt::Debug> Display for CopyableRollToProcess<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "CopyableRollToProcess({} choices, method: {})",
+            self.possible_results.len(),
+            self.roll_method
+        )
+    }
+}
+
 /// A result able to be picked at random in a list of possible results. The **weight** is used
 /// to determine the chances of this result to be picked against all other possible choices.
-#[derive(Debug)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct WeightedResult<T> {
     /// The result that can be selected at random.
     pub result: T,
@@ -53,13 +213,19 @@ pub struct WeightedResult<T> {
     pub weight: u32,
 }
 
+impl<T> Display for WeightedResult<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "WeightedResult(weight: {})", self.weight)
+    }
+}
+
 /// A result able to be picked at random in a list of possible results. The **weight** is used
 /// to determine the chances of this result to be picked against all other possible choices.
 /// The result must be copyable.
-#[derive(Debug, Clone, Copy)]
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CopyableWeightedResult<T>
 where
-    T: Copy,
+    T: Copy + std::fmt::Debug,
 {
     /// The result that can be selected at random.
     pub result: T,
@@ -71,8 +237,18 @@ where
     pub weight: u32,
 }
 
+impl<T: Copy + std::fmt::Debug> Display for CopyableWeightedResult<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "CopyableWeightedResult(result: {:?}, weight: {})",
+            self.result, self.weight
+        )
+    }
+}
+
 /// Data allowing to roll **dice** times a **die_type** sided die and add an eventual **modifier**.
-#[derive(Debug, PartialEq, PartialOrd, Clone, Copy, Serialize, Deserialize)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Serialize, Deserialize)]
 pub struct PreparedRoll {
     /// The number of dice to roll.
     pub dice: u16,
@@ -83,8 +259,24 @@ pub struct PreparedRoll {
     pub modifier: i32,
 }
 
+impl Default for PreparedRoll {
+    fn default() -> Self {
+        Self {
+            dice: 1,
+            die_type: 6,
+            modifier: 0,
+        }
+    }
+}
+
+impl Display for PreparedRoll {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}d{}+({})", self.dice, self.die_type, self.modifier)
+    }
+}
+
 /// A temporary struct used for finding which result a dice roll returns.
-#[derive(Debug, Clone, Copy)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 struct RangedResult {
     /// The index of the result this struct represents.
     pub result_index: usize,
@@ -94,14 +286,33 @@ struct RangedResult {
     pub max: i64,
 }
 
+impl Display for RangedResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "RangedResult(i: {}, min: {}, max: {})",
+            self.result_index, self.min, self.max
+        )
+    }
+}
+
 /// Uses a Random Number Generator fed with a **seed** to generate dice roll results, booleans
 /// and numbers in a deterministic way.
 ///
 /// It ensures that as long as you ask for the same rolls or generate the same types, you will
 /// always get the same results in the same order for a given **seed** and **step**.
+#[derive(Clone, Debug)]
 pub struct SeededDiceRoller {
     /// The seeded random generator.
     rng: Pcg64,
+}
+
+impl Default for SeededDiceRoller {
+    fn default() -> Self {
+        Self {
+            rng: Seeder::from("seed".to_string()).make_rng(),
+        }
+    }
 }
 
 impl SeededDiceRoller {
@@ -127,105 +338,105 @@ impl SeededDiceRoller {
     /// Returns **true** or **false**.
     pub fn gen_bool(&mut self) -> bool {
         let gen = self.rng.gen::<bool>();
-        trace!("gen_bool: {:?}", gen);
+        trace!("gen_bool: {}", gen);
         gen
     }
 
     /// Returns a random 8bit unsigned integer.
     pub fn gen_u8(&mut self) -> u8 {
         let gen = self.rng.gen::<u8>();
-        trace!("gen_u8: {:?}", gen);
+        trace!("gen_u8: {}", gen);
         gen
     }
 
     /// Returns a random 16bit unsigned integer.
     pub fn gen_u16(&mut self) -> u16 {
         let gen = self.rng.gen::<u16>();
-        trace!("gen_u16: {:?}", gen);
+        trace!("gen_u16: {}", gen);
         gen
     }
 
     /// Returns a random 32bit unsigned integer.
     pub fn gen_u32(&mut self) -> u32 {
         let gen = self.rng.gen::<u32>();
-        trace!("gen_u32: {:?}", gen);
+        trace!("gen_u32: {}", gen);
         gen
     }
 
     /// Returns a random 64bit unsigned integer.
     pub fn gen_u64(&mut self) -> u64 {
         let gen = self.rng.gen::<u64>();
-        trace!("gen_u64: {:?}", gen);
+        trace!("gen_u64: {}", gen);
         gen
     }
 
     /// Returns a random 128bit unsigned integer.
     pub fn gen_u128(&mut self) -> u128 {
         let gen = self.rng.gen::<u128>();
-        trace!("gen_u128: {:?}", gen);
+        trace!("gen_u128: {}", gen);
         gen
     }
 
     /// Returns a random pointer-sized unsigned integer.
     pub fn gen_usize(&mut self) -> usize {
         let gen = self.rng.gen::<usize>();
-        trace!("gen_usize: {:?}", gen);
+        trace!("gen_usize: {}", gen);
         gen
     }
 
     /// Returns a random 8bit signed integer.
     pub fn gen_i8(&mut self) -> i8 {
         let gen = self.rng.gen::<i8>();
-        trace!("gen_i8: {:?}", gen);
+        trace!("gen_i8: {}", gen);
         gen
     }
 
     /// Returns a random 16bit signed integer.
     pub fn gen_i16(&mut self) -> i16 {
         let gen = self.rng.gen::<i16>();
-        trace!("gen_i16: {:?}", gen);
+        trace!("gen_i16: {}", gen);
         gen
     }
 
     /// Returns a random 32bit signed integer.
     pub fn gen_i32(&mut self) -> i32 {
         let gen = self.rng.gen::<i32>();
-        trace!("gen_i32: {:?}", gen);
+        trace!("gen_i32: {}", gen);
         gen
     }
 
     /// Returns a random 64bit signed integer.
     pub fn gen_i64(&mut self) -> i64 {
         let gen = self.rng.gen::<i64>();
-        trace!("gen_i64: {:?}", gen);
+        trace!("gen_i64: {}", gen);
         gen
     }
 
     /// Returns a random 128bit signed integer.
     pub fn gen_i128(&mut self) -> i128 {
         let gen = self.rng.gen::<i128>();
-        trace!("gen_i128: {:?}", gen);
+        trace!("gen_i128: {}", gen);
         gen
     }
 
     /// Returns a random pointer-sized signed integer.
     pub fn gen_isize(&mut self) -> isize {
         let gen = self.rng.gen::<isize>();
-        trace!("gen_isize: {:?}", gen);
+        trace!("gen_isize: {}", gen);
         gen
     }
 
     /// Returns a random 32bit floating point type.
     pub fn gen_f32(&mut self) -> f32 {
         let gen = self.rng.gen::<f32>();
-        trace!("gen_f32: {:?}", gen);
+        trace!("gen_f32: {}", gen);
         gen
     }
 
     /// Returns a random 64bit floating point type.
     pub fn gen_f64(&mut self) -> f64 {
         let gen = self.rng.gen::<f64>();
-        trace!("gen_f64: {:?}", gen);
+        trace!("gen_f64: {}", gen);
         gen
     }
 
@@ -239,13 +450,7 @@ impl SeededDiceRoller {
         }
         result += modifier as i64;
 
-        trace!(
-            "roll: {:?}d{:?}+({:?}) = {:?}",
-            dice,
-            die_type,
-            modifier,
-            result
-        );
+        trace!("roll: {}d{}+({}) = {}", dice, die_type, modifier, result);
         result
     }
 
@@ -258,7 +463,10 @@ impl SeededDiceRoller {
     /// Returns the result of a random selection in a **to_process** list given alongside the
     /// details of the selection method. That method can either be to follow the rules dictated
     /// in a [PreparedRoll] or by using a uniform or normal distribution.
-    pub fn get_result<T: Copy>(&mut self, to_process: &CopyableRollToProcess<T>) -> Option<T> {
+    pub fn get_result<T: Copy + std::fmt::Debug>(
+        &mut self,
+        to_process: &CopyableRollToProcess<T>,
+    ) -> Option<T> {
         let weighted_possible_results = (&to_process)
             .possible_results
             .iter()
@@ -318,7 +526,6 @@ impl SeededDiceRoller {
             &1,
             &mut choices,
         );
-        trace!("process_prepared_roll - choices: {:?}", choices);
 
         let roll = self.roll_prepared(prepared_roll);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
@@ -347,7 +554,6 @@ impl SeededDiceRoller {
             &(dice.clone() as i64),
             &mut choices,
         );
-        trace!("process_gaussian_roll - choices: {:?}", choices);
 
         let max = SeededDiceRoller::calculate_die_type(to_process);
         // Adds a modifier to avoid getting results skewed towards the beginning or the end of the set
@@ -377,7 +583,6 @@ impl SeededDiceRoller {
         // Transform the array so it can be used easily
         let mut choices: Vec<RangedResult> = Vec::new();
         self.fill_choices(&to_process, &length, &1, &1, &mut choices);
-        trace!("process_simple_roll - choices: {:?}", choices);
 
         let max = SeededDiceRoller::calculate_die_type(to_process);
         let roll = self.roll(1, max, 0);
@@ -417,11 +622,14 @@ impl SeededDiceRoller {
                 max,
             })
         }
+        trace!("fill_choices - choices: {:?}", choices);
     }
 
     /// Returns a vector of [CopyableWeightedResult] using the given **vec** of values.
     /// The result can be used in a [CopyableRollToProcess].
-    pub fn to_copyable_possible_results<T: Copy>(vec: Vec<T>) -> Vec<CopyableWeightedResult<T>> {
+    pub fn to_copyable_possible_results<T: Copy + std::fmt::Debug>(
+        vec: Vec<T>,
+    ) -> Vec<CopyableWeightedResult<T>> {
         vec.iter()
             .map(|c| CopyableWeightedResult {
                 result: c.clone(),
