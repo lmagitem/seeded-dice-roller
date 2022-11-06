@@ -529,7 +529,7 @@ impl SeededDiceRoller {
 
         let roll = self.roll_prepared(prepared_roll);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
-        trace!("result: {:?}", result);
+        trace!("chosen: {:?}", result);
 
         match result {
             Some(ranged_result) => Some(ranged_result.result_index),
@@ -565,7 +565,7 @@ impl SeededDiceRoller {
             });
         let roll = self.roll(*dice, max, modifier);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
-        trace!("result: {:?}", result);
+        trace!("chosen: {:?}", result);
 
         match result {
             Some(ranged_result) => Some(ranged_result.result_index),
@@ -587,7 +587,7 @@ impl SeededDiceRoller {
         let max = SeededDiceRoller::calculate_die_type(to_process);
         let roll = self.roll(1, max, 0);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
-        trace!("result: {:?}", result);
+        trace!("chosen: {:?}", result);
 
         match result {
             Some(ranged_result) => Some(ranged_result.result_index),
