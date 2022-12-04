@@ -198,10 +198,10 @@ where
     pub roll_method: RollMethod,
 }
 
-impl<T> CopyableRollToProcess<T> {
+impl<T: Copy + std::fmt::Debug> CopyableRollToProcess<T> {
     /// Creates a new [CopyableRollToProcess].
     fn new(
-        possible_results: Vec<WeightedReCopyableWeightedResultsult<T>>,
+        possible_results: Vec<CopyableWeightedResult<T>>,
         roll_method: RollMethod,
     ) -> Self {
         Self {
@@ -266,7 +266,7 @@ where
     pub weight: u32,
 }
 
-impl<T> CopyableWeightedResult<T> {
+impl<T: Copy + std::fmt::Debug> CopyableWeightedResult<T> {
     /// Creates a new [CopyableWeightedResult].
     fn new(result: T, weight: u32) -> Self {
         Self { result, weight }
