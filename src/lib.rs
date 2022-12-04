@@ -166,7 +166,7 @@ pub struct RollToProcess<T> {
 
 impl<T> RollToProcess<T> {
     /// Creates a new [RollToProcess].
-    fn new(possible_results: Vec<WeightedResult<T>>, roll_method: RollMethod) -> Self {
+    pub fn new(possible_results: Vec<WeightedResult<T>>, roll_method: RollMethod) -> Self {
         Self {
             possible_results,
             roll_method,
@@ -200,10 +200,7 @@ where
 
 impl<T: Copy + std::fmt::Debug> CopyableRollToProcess<T> {
     /// Creates a new [CopyableRollToProcess].
-    fn new(
-        possible_results: Vec<CopyableWeightedResult<T>>,
-        roll_method: RollMethod,
-    ) -> Self {
+    pub fn new(possible_results: Vec<CopyableWeightedResult<T>>, roll_method: RollMethod) -> Self {
         Self {
             possible_results,
             roll_method,
@@ -237,7 +234,7 @@ pub struct WeightedResult<T> {
 
 impl<T> WeightedResult<T> {
     /// Creates a new [WeightedResult].
-    fn new(result: T, weight: u32) -> Self {
+    pub fn new(result: T, weight: u32) -> Self {
         Self { result, weight }
     }
 }
@@ -268,7 +265,7 @@ where
 
 impl<T: Copy + std::fmt::Debug> CopyableWeightedResult<T> {
     /// Creates a new [CopyableWeightedResult].
-    fn new(result: T, weight: u32) -> Self {
+    pub fn new(result: T, weight: u32) -> Self {
         Self { result, weight }
     }
 }
@@ -297,7 +294,7 @@ pub struct PreparedRoll {
 
 impl PreparedRoll {
     /// Creates a new [PreparedRoll].
-    fn new(dice: u16, die_type: u32, modifier: i32) -> Self {
+    pub fn new(dice: u16, die_type: u32, modifier: i32) -> Self {
         Self {
             dice,
             die_type,
@@ -335,7 +332,7 @@ struct RangedResult {
 
 impl RangedResult {
     /// Creates a new [RangedResult].
-    fn new(result_index: usize, min: i64, max: i64) -> Self {
+    pub fn new(result_index: usize, min: i64, max: i64) -> Self {
         Self {
             result_index,
             min,
