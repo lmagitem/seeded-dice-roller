@@ -164,6 +164,16 @@ pub struct RollToProcess<T> {
     pub roll_method: RollMethod,
 }
 
+impl<T> RollToProcess<T> {
+    /// Creates a new [RollToProcess].
+    fn new(possible_results: Vec<WeightedResult<T>>, roll_method: RollMethod) -> Self {
+        Self {
+            possible_results,
+            roll_method,
+        }
+    }
+}
+
 impl<T> Display for RollToProcess<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -188,13 +198,25 @@ where
     pub roll_method: RollMethod,
 }
 
+impl<T> CopyableRollToProcess<T> {
+    /// Creates a new [CopyableRollToProcess].
+    fn new(
+        possible_results: Vec<WeightedReCopyableWeightedResultsult<T>>,
+        roll_method: RollMethod,
+    ) -> Self {
+        Self {
+            possible_results,
+            roll_method,
+        }
+    }
+}
+
 impl<T: Copy + std::fmt::Debug> Display for CopyableRollToProcess<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "CopyableRollToProcess {{ choices: {:?}, method: {} }}",
-            self.possible_results,
-            self.roll_method
+            self.possible_results, self.roll_method
         )
     }
 }
@@ -211,6 +233,13 @@ pub struct WeightedResult<T> {
     /// Or with an example: when using the SimpleRoll [RollMethod], an item with a weight of 5
     /// will have 5 more chances to be selected than an item with a weight of one;
     pub weight: u32,
+}
+
+impl<T> WeightedResult<T> {
+    /// Creates a new [WeightedResult].
+    fn new(result: T, weight: u32) -> Self {
+        Self { result, weight }
+    }
 }
 
 impl<T> Display for WeightedResult<T> {
@@ -237,6 +266,13 @@ where
     pub weight: u32,
 }
 
+impl<T> CopyableWeightedResult<T> {
+    /// Creates a new [CopyableWeightedResult].
+    fn new(result: T, weight: u32) -> Self {
+        Self { result, weight }
+    }
+}
+
 impl<T: Copy + std::fmt::Debug> Display for CopyableWeightedResult<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -257,6 +293,17 @@ pub struct PreparedRoll {
     pub die_type: u32,
     /// An eventual modifier to apply to the roll's result.
     pub modifier: i32,
+}
+
+impl PreparedRoll {
+    /// Creates a new [PreparedRoll].
+    fn new(dice: u16, die_type: u32, modifier: i32) -> Self {
+        Self {
+            dice,
+            die_type,
+            modifier,
+        }
+    }
 }
 
 impl Default for PreparedRoll {
@@ -284,6 +331,17 @@ struct RangedResult {
     pub min: i64,
     /// The roll must be lower that **max** value. Non-inclusive.
     pub max: i64,
+}
+
+impl RangedResult {
+    /// Creates a new [RangedResult].
+    fn new(result_index: usize, min: i64, max: i64) -> Self {
+        Self {
+            result_index,
+            min,
+            max,
+        }
+    }
 }
 
 impl Display for RangedResult {
