@@ -332,6 +332,7 @@ struct RangedResult {
 
 impl RangedResult {
     /// Creates a new [RangedResult].
+    #[allow(dead_code)]
     pub fn new(result_index: usize, min: i64, max: i64) -> Self {
         Self {
             result_index,
@@ -393,42 +394,42 @@ impl SeededDiceRoller {
     /// Returns **true** or **false**.
     pub fn gen_bool(&mut self) -> bool {
         let gen = self.rng.gen::<bool>();
-        trace!("gen_bool: {}", gen);
+        trace!(" gen_bool: {}", gen);
         gen
     }
 
     /// Returns a random 8bit unsigned integer.
     pub fn gen_u8(&mut self) -> u8 {
         let gen = self.rng.gen::<u8>();
-        trace!("gen_u8: {}", gen);
+        trace!("   gen_u8: {}", gen);
         gen
     }
 
     /// Returns a random 16bit unsigned integer.
     pub fn gen_u16(&mut self) -> u16 {
         let gen = self.rng.gen::<u16>();
-        trace!("gen_u16: {}", gen);
+        trace!("  gen_u16: {}", gen);
         gen
     }
 
     /// Returns a random 32bit unsigned integer.
     pub fn gen_u32(&mut self) -> u32 {
         let gen = self.rng.gen::<u32>();
-        trace!("gen_u32: {}", gen);
+        trace!("  gen_u32: {}", gen);
         gen
     }
 
     /// Returns a random 64bit unsigned integer.
     pub fn gen_u64(&mut self) -> u64 {
         let gen = self.rng.gen::<u64>();
-        trace!("gen_u64: {}", gen);
+        trace!("  gen_u64: {}", gen);
         gen
     }
 
     /// Returns a random 128bit unsigned integer.
     pub fn gen_u128(&mut self) -> u128 {
         let gen = self.rng.gen::<u128>();
-        trace!("gen_u128: {}", gen);
+        trace!(" gen_u128: {}", gen);
         gen
     }
 
@@ -442,35 +443,35 @@ impl SeededDiceRoller {
     /// Returns a random 8bit signed integer.
     pub fn gen_i8(&mut self) -> i8 {
         let gen = self.rng.gen::<i8>();
-        trace!("gen_i8: {}", gen);
+        trace!("   gen_i8: {}", gen);
         gen
     }
 
     /// Returns a random 16bit signed integer.
     pub fn gen_i16(&mut self) -> i16 {
         let gen = self.rng.gen::<i16>();
-        trace!("gen_i16: {}", gen);
+        trace!("  gen_i16: {}", gen);
         gen
     }
 
     /// Returns a random 32bit signed integer.
     pub fn gen_i32(&mut self) -> i32 {
         let gen = self.rng.gen::<i32>();
-        trace!("gen_i32: {}", gen);
+        trace!("  gen_i32: {}", gen);
         gen
     }
 
     /// Returns a random 64bit signed integer.
     pub fn gen_i64(&mut self) -> i64 {
         let gen = self.rng.gen::<i64>();
-        trace!("gen_i64: {}", gen);
+        trace!("  gen_i64: {}", gen);
         gen
     }
 
     /// Returns a random 128bit signed integer.
     pub fn gen_i128(&mut self) -> i128 {
         let gen = self.rng.gen::<i128>();
-        trace!("gen_i128: {}", gen);
+        trace!(" gen_i128: {}", gen);
         gen
     }
 
@@ -484,14 +485,14 @@ impl SeededDiceRoller {
     /// Returns a random 32bit floating point type.
     pub fn gen_f32(&mut self) -> f32 {
         let gen = self.rng.gen::<f32>();
-        trace!("gen_f32: {}", gen);
+        trace!("  gen_f32: {}", gen);
         gen
     }
 
     /// Returns a random 64bit floating point type.
     pub fn gen_f64(&mut self) -> f64 {
         let gen = self.rng.gen::<f64>();
-        trace!("gen_f64: {}", gen);
+        trace!("  gen_f64: {}", gen);
         gen
     }
 
@@ -505,7 +506,19 @@ impl SeededDiceRoller {
         }
         result += modifier as i64;
 
-        trace!("roll: {}d{}+({}) = {}", dice, die_type, modifier, result);
+        trace!(
+            "     roll: {}d{}{} = {}",
+            dice,
+            die_type,
+            if modifier > 0 {
+                format!(" + {}", modifier)
+            } else if modifier < 0 {
+                format!(" - {}", modifier * -1)
+            } else {
+                "".to_string()
+            },
+            result
+        );
         result
     }
 
@@ -584,7 +597,7 @@ impl SeededDiceRoller {
 
         let roll = self.roll_prepared(prepared_roll);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
-        trace!("chosen: {:?}", result);
+        trace!("   chosen: {:?}", result);
 
         match result {
             Some(ranged_result) => Some(ranged_result.result_index),
@@ -614,7 +627,7 @@ impl SeededDiceRoller {
             });
         let roll = self.roll(dice, max, modifier);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
-        trace!("chosen: {:?}", result);
+        trace!("   chosen: {:?}", result);
 
         match result {
             Some(ranged_result) => Some(ranged_result.result_index),
@@ -636,7 +649,7 @@ impl SeededDiceRoller {
         let max = SeededDiceRoller::calculate_die_type(to_process);
         let roll = self.roll(1, max, 0);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
-        trace!("chosen: {:?}", result);
+        trace!("   chosen: {:?}", result);
 
         match result {
             Some(ranged_result) => Some(ranged_result.result_index),
@@ -671,7 +684,7 @@ impl SeededDiceRoller {
                 max,
             })
         }
-        trace!("choices: {:?}", choices);
+         trace!(" pre-roll: {} possible results to choose from", choices.len());
     }
 
     /// Returns a vector of [CopyableWeightedResult] using the given **vec** of values.
