@@ -550,15 +550,15 @@ impl SeededDiceRoller {
             1 => Some(0),
             _ => match &to_process.roll_method {
                 RollMethod::PreparedRoll(ref roll) => {
-                    let result = self.process_prepared_roll(&to_process, &length, &roll);
+                    let result = self.process_prepared_roll(&to_process, length, &roll);
                     result
                 }
                 RollMethod::GaussianRoll(dice) => {
-                    let result = self.process_gaussian_roll(&to_process, &length, &dice);
+                    let result = self.process_gaussian_roll(&to_process, length, *dice);
                     result
                 }
                 RollMethod::SimpleRoll => {
-                    let result = self.process_simple_roll(&to_process, &length);
+                    let result = self.process_simple_roll(&to_process, length);
                     result
                 }
             },
@@ -569,16 +569,16 @@ impl SeededDiceRoller {
     fn process_prepared_roll<T>(
         &mut self,
         to_process: &RollToProcess<T>,
-        length: &usize,
+        length: usize,
         prepared_roll: &PreparedRoll,
     ) -> Option<usize> {
         // Transform the array so it can be used easily
         let mut choices: Vec<RangedResult> = Vec::new();
         self.fill_choices(
             &to_process,
-            &length,
-            &(prepared_roll.clone().dice as i64),
-            &1,
+            length,
+            prepared_roll.clone().dice as i64,
+            1,
             &mut choices,
         );
 
@@ -597,18 +597,12 @@ impl SeededDiceRoller {
     fn process_gaussian_roll<T>(
         &mut self,
         to_process: &RollToProcess<T>,
-        length: &usize,
-        dice: &u16,
+        length: usize,
+        dice: u16,
     ) -> Option<usize> {
         // Transform the array so it can be used easily
         let mut choices: Vec<RangedResult> = Vec::new();
-        self.fill_choices(
-            &to_process,
-            &length,
-            &(dice.clone() as i64),
-            &(dice.clone() as i64),
-            &mut choices,
-        );
+        self.fill_choices(&to_process, length, dice as i64, dice as i64, &mut choices);
 
         let max = SeededDiceRoller::calculate_die_type(to_process);
         // Adds a modifier to avoid getting results skewed towards the beginning or the end of the set
@@ -618,7 +612,7 @@ impl SeededDiceRoller {
             } else {
                 0
             });
-        let roll = self.roll(*dice, max, modifier);
+        let roll = self.roll(dice, max, modifier);
         let result = choices.iter().find(|r| roll >= r.min && roll < r.max);
         trace!("chosen: {:?}", result);
 
@@ -633,11 +627,11 @@ impl SeededDiceRoller {
     fn process_simple_roll<T>(
         &mut self,
         to_process: &RollToProcess<T>,
-        length: &usize,
+        length: usize,
     ) -> Option<usize> {
         // Transform the array so it can be used easily
         let mut choices: Vec<RangedResult> = Vec::new();
-        self.fill_choices(&to_process, &length, &1, &1, &mut choices);
+        self.fill_choices(&to_process, length, 1, 1, &mut choices);
 
         let max = SeededDiceRoller::calculate_die_type(to_process);
         let roll = self.roll(1, max, 0);
@@ -655,24 +649,24 @@ impl SeededDiceRoller {
     fn fill_choices<T>(
         &self,
         to_process: &RollToProcess<T>,
-        length: &usize,
-        min: &i64,
-        weight_multiplier: &i64,
+        length: usize,
+        min: i64,
+        weight_multiplier: i64,
         choices: &mut Vec<RangedResult>,
     ) {
-        let mut min = min.clone();
+        let mut min = min;
         let mut last_end: i64 = min;
-        for i in 0..*length {
-            let weight: i64 = ((&to_process.possible_results[i]).weight as i64) * weight_multiplier;
-            min = if i == 0 { i64::MIN } else { last_end.clone() };
+        for i in 0..length {
+            let mut weight: i64 =
+                ((&to_process.possible_results[i]).weight as i64) * weight_multiplier;
+            if weight < 0 {
+                weight = 0
+            }
+            min = if i == 0 { i64::MIN } else { last_end };
             last_end += weight;
-            let max: i64 = if i == length - 1 {
-                i64::MAX
-            } else {
-                last_end.clone()
-            };
+            let max: i64 = if i == length - 1 { i64::MAX } else { last_end };
             choices.push(RangedResult {
-                result_index: i as usize,
+                result_index: i,
                 min,
                 max,
             })
@@ -686,8 +680,9 @@ impl SeededDiceRoller {
         vec: Vec<T>,
     ) -> Vec<CopyableWeightedResult<T>> {
         vec.iter()
+            .copied()
             .map(|c| CopyableWeightedResult {
-                result: c.clone(),
+                result: c,
                 weight: 1,
             })
             .collect()
@@ -696,14 +691,12 @@ impl SeededDiceRoller {
     /// Returns a vector of [WeightedResult] using the given **vec** of values.
     /// The result can be used in a [RollToProcess].
     pub fn to_possible_results<T>(vec: Vec<T>) -> Vec<WeightedResult<T>> {
-        let mut result = Vec::new();
-        for item in vec {
-            result.push(WeightedResult {
+        vec.into_iter()
+            .map(|item| WeightedResult {
                 result: item,
                 weight: 1,
-            });
-        }
-        result
+            })
+            .collect()
     }
 
     /// Adds the weight of every entry in a list **to_process** in order to determine the type
@@ -727,29 +720,29 @@ mod tests {
     fn dice_roller_is_deterministic() {
         let mut rng = SeededDiceRoller::new("seed", "test");
         {
-            assert!(rng.roll(1, 6, 0) == 2);
-            assert!(rng.roll(3, 6, -5) == 2);
-            assert!(rng.roll(1, 6, 0) == 2);
-            assert!(rng.roll(1, 20, 0) == 6);
-            assert!(rng.roll(1, 6, -15) == -13);
-            assert!(rng.roll(69, 6, 0) == 242);
-            assert!(rng.roll(2, 123, 0) == 81);
-            assert!(rng.roll(1, 6, 3343) == 3348);
-            assert!(rng.gen_bool() == false);
-            assert!(rng.gen_u8() == 188);
-            assert!(rng.gen_u16() == 45209);
-            assert!(rng.gen_u32() == 2067204665);
-            assert!(rng.gen_u64() == 11144615613207554777);
-            assert!(rng.gen_u128() == 326911416680500363065339602289182768569);
-            assert!(rng.gen_usize() == 8269465146262660349);
-            assert!(rng.gen_i8() == 83);
-            assert!(rng.gen_i16() == 3067);
-            assert!(rng.gen_i32() == -1171247657);
-            assert!(rng.gen_i64() == 9108059218017983344);
-            assert!(rng.gen_i128() == 146530613037906103918089470235257735612);
-            assert!(rng.gen_isize() == 2479790373172492566);
-            assert!(rng.gen_f32() == 0.9228384);
-            assert!(rng.gen_f64() == 0.8631162799734914);
+            assert_eq!(rng.roll(1, 6, 0), 2);
+            assert_eq!(rng.roll(3, 6, -5), 2);
+            assert_eq!(rng.roll(1, 6, 0), 2);
+            assert_eq!(rng.roll(1, 20, 0), 6);
+            assert_eq!(rng.roll(1, 6, -15), -13);
+            assert_eq!(rng.roll(69, 6, 0), 242);
+            assert_eq!(rng.roll(2, 123, 0), 81);
+            assert_eq!(rng.roll(1, 6, 3343), 3348);
+            assert_eq!(rng.gen_bool(), false);
+            assert_eq!(rng.gen_u8(), 188);
+            assert_eq!(rng.gen_u16(), 45209);
+            assert_eq!(rng.gen_u32(), 2067204665);
+            assert_eq!(rng.gen_u64(), 11144615613207554777);
+            assert_eq!(rng.gen_u128(), 326911416680500363065339602289182768569);
+            assert_eq!(rng.gen_usize(), 8269465146262660349);
+            assert_eq!(rng.gen_i8(), 83);
+            assert_eq!(rng.gen_i16(), 3067);
+            assert_eq!(rng.gen_i32(), -1171247657);
+            assert_eq!(rng.gen_i64(), 9108059218017983344);
+            assert_eq!(rng.gen_i128(), 146530613037906103918089470235257735612);
+            assert_eq!(rng.gen_isize(), 2479790373172492566);
+            assert_eq!(rng.gen_f32(), 0.9228384);
+            assert_eq!(rng.gen_f64(), 0.8631162799734914);
 
             assert!("j".eq(rng
                 .get_result(&CopyableRollToProcess {
@@ -762,29 +755,29 @@ mod tests {
         }
         rng = SeededDiceRoller::new("other_seed", "test");
         {
-            assert!(rng.roll(1, 6, 0) == 6);
-            assert!(rng.roll(3, 6, -5) == 10);
-            assert!(rng.roll(1, 6, 0) == 3);
-            assert!(rng.roll(1, 20, 0) == 10);
-            assert!(rng.roll(1, 6, -15) == -12);
-            assert!(rng.roll(69, 6, 0) == 240);
-            assert!(rng.roll(2, 123, 0) == 138);
-            assert!(rng.roll(1, 6, 3343) == 3344);
-            assert!(rng.gen_bool() == true);
-            assert!(rng.gen_u8() == 82);
-            assert!(rng.gen_u16() == 27159);
-            assert!(rng.gen_u32() == 3180098725);
-            assert!(rng.gen_u64() == 11552742574431662508);
-            assert!(rng.gen_u128() == 196627661076901716217737966822153854526);
-            assert!(rng.gen_usize() == 1997277166238086139);
-            assert!(rng.gen_i8() == 45);
-            assert!(rng.gen_i16() == -22194);
-            assert!(rng.gen_i32() == -1765316073);
-            assert!(rng.gen_i64() == 7982030035740135755);
-            assert!(rng.gen_i128() == 130008835046757806841833196450514227059);
-            assert!(rng.gen_isize() == -3501112453948772746);
-            assert!(rng.gen_f32() == 0.9940159);
-            assert!(rng.gen_f64() == 0.45617011270821706);
+            assert_eq!(rng.roll(1, 6, 0), 6);
+            assert_eq!(rng.roll(3, 6, -5), 10);
+            assert_eq!(rng.roll(1, 6, 0), 3);
+            assert_eq!(rng.roll(1, 20, 0), 10);
+            assert_eq!(rng.roll(1, 6, -15), -12);
+            assert_eq!(rng.roll(69, 6, 0), 240);
+            assert_eq!(rng.roll(2, 123, 0), 138);
+            assert_eq!(rng.roll(1, 6, 3343), 3344);
+            assert_eq!(rng.gen_bool(), true);
+            assert_eq!(rng.gen_u8(), 82);
+            assert_eq!(rng.gen_u16(), 27159);
+            assert_eq!(rng.gen_u32(), 3180098725);
+            assert_eq!(rng.gen_u64(), 11552742574431662508);
+            assert_eq!(rng.gen_u128(), 196627661076901716217737966822153854526);
+            assert_eq!(rng.gen_usize(), 1997277166238086139);
+            assert_eq!(rng.gen_i8(), 45);
+            assert_eq!(rng.gen_i16(), -22194);
+            assert_eq!(rng.gen_i32(), -1765316073);
+            assert_eq!(rng.gen_i64(), 7982030035740135755);
+            assert_eq!(rng.gen_i128(), 130008835046757806841833196450514227059);
+            assert_eq!(rng.gen_isize(), -3501112453948772746);
+            assert_eq!(rng.gen_f32(), 0.9940159);
+            assert_eq!(rng.gen_f64(), 0.45617011270821706);
 
             assert!("k".eq(rng
                 .get_result(&CopyableRollToProcess {
@@ -797,29 +790,29 @@ mod tests {
         }
         rng = SeededDiceRoller::new("other_seed", "step");
         {
-            assert!(rng.roll(1, 6, 0) == 1);
-            assert!(rng.roll(3, 6, -5) == 4);
-            assert!(rng.roll(1, 6, 0) == 6);
-            assert!(rng.roll(1, 20, 0) == 15);
-            assert!(rng.roll(1, 6, -15) == -12);
-            assert!(rng.roll(69, 6, 0) == 239);
-            assert!(rng.roll(2, 123, 0) == 91);
-            assert!(rng.roll(1, 6, 3343) == 3344);
-            assert!(rng.gen_bool() == false);
-            assert!(rng.gen_u8() == 162);
-            assert!(rng.gen_u16() == 34315);
-            assert!(rng.gen_u32() == 2687893072);
-            assert!(rng.gen_u64() == 10068043339616645489);
-            assert!(rng.gen_u128() == 78293060686096732239048405502667573500);
-            assert!(rng.gen_usize() == 15847822118157400675);
-            assert!(rng.gen_i8() == -83);
-            assert!(rng.gen_i16() == 683);
-            assert!(rng.gen_i32() == -585801794);
-            assert!(rng.gen_i64() == -1818745056280883793);
-            assert!(rng.gen_i128() == 162224135727382922470578647495526568637);
-            assert!(rng.gen_isize() == -6539258215208328255);
-            assert!(rng.gen_f32() == 0.6179796);
-            assert!(rng.gen_f64() == 0.22569667223081946);
+            assert_eq!(rng.roll(1, 6, 0), 1);
+            assert_eq!(rng.roll(3, 6, -5), 4);
+            assert_eq!(rng.roll(1, 6, 0), 6);
+            assert_eq!(rng.roll(1, 20, 0), 15);
+            assert_eq!(rng.roll(1, 6, -15), -12);
+            assert_eq!(rng.roll(69, 6, 0), 239);
+            assert_eq!(rng.roll(2, 123, 0), 91);
+            assert_eq!(rng.roll(1, 6, 3343), 3344);
+            assert_eq!(rng.gen_bool(), false);
+            assert_eq!(rng.gen_u8(), 162);
+            assert_eq!(rng.gen_u16(), 34315);
+            assert_eq!(rng.gen_u32(), 2687893072);
+            assert_eq!(rng.gen_u64(), 10068043339616645489);
+            assert_eq!(rng.gen_u128(), 78293060686096732239048405502667573500);
+            assert_eq!(rng.gen_usize(), 15847822118157400675);
+            assert_eq!(rng.gen_i8(), -83);
+            assert_eq!(rng.gen_i16(), 683);
+            assert_eq!(rng.gen_i32(), -585801794);
+            assert_eq!(rng.gen_i64(), -1818745056280883793);
+            assert_eq!(rng.gen_i128(), 162224135727382922470578647495526568637);
+            assert_eq!(rng.gen_isize(), -6539258215208328255);
+            assert_eq!(rng.gen_f32(), 0.6179796);
+            assert_eq!(rng.gen_f64(), 0.22569667223081946);
 
             assert!("g".eq(rng
                 .get_result(&CopyableRollToProcess {
@@ -859,21 +852,21 @@ mod tests {
             die_type: 6,
             modifier: 0,
         });
-        assert!(n_one == n_two);
+        assert_eq!(n_one, n_two);
         n_one = rng_one.roll(3, 6, -4);
         n_two = rng_two.roll_prepared(&PreparedRoll {
             dice: 3,
             die_type: 6,
             modifier: -4,
         });
-        assert!(n_one == n_two);
+        assert_eq!(n_one, n_two);
         n_one = rng_one.roll(20, 100, -444);
         n_two = rng_two.roll_prepared(&PreparedRoll {
             dice: 20,
             die_type: 100,
             modifier: -444,
         });
-        assert!(n_one == n_two);
+        assert_eq!(n_one, n_two);
     }
 
     #[test]

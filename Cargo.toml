@@ -1,6 +1,6 @@
 [package]
 name = "seeded_dice_roller"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 description = "A dice roller using a seed to give deterministic results."
 license = "MIT"
@@ -14,4 +14,4 @@ rand = "0.8.5"
 rand_pcg = "0.3.1"
 rand_seeder = "0.2.3"
 serde = { version = "1.0.147", features = ["derive"] }
-smart-default = "0.6.0"
+smart-default = "0.7.1"
