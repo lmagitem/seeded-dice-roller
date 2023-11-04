@@ -129,6 +129,7 @@ use rand_seeder::Seeder;
 use serde::{Deserialize, Serialize};
 use smart_default::SmartDefault;
 use std::fmt::Display;
+use rand::distributions::uniform::{SampleRange, SampleUniform};
 
 /// Enum used to know how to determine the result of a random pick in a list of possible results.
 #[derive(
@@ -496,6 +497,17 @@ impl SeededDiceRoller {
         gen
     }
 
+    /// Returns a random number in the given range.
+    pub fn gen_range<T, R>(&mut self, range: R) -> T
+        where
+            T: SampleUniform + Display,
+            R: SampleRange<T>
+    {
+        let gen = self.rng.gen_range(range);
+        trace!("  gen_range: {}", gen);
+        gen
+    }
+
     /// Rolls **dice** times a **die_type** sided die, adds an eventual **modifier** and returns
     /// the result.
     pub fn roll(&mut self, dice: u16, die_type: u32, modifier: i32) -> i64 {
@@ -765,6 +777,8 @@ mod tests {
                     roll_method: RollMethod::SimpleRoll,
                 })
                 .unwrap()));
+
+            assert_eq!(rng.gen_range(0..50), 8);
         }
         rng = SeededDiceRoller::new("other_seed", "test");
         {
@@ -800,6 +814,8 @@ mod tests {
                     roll_method: RollMethod::SimpleRoll,
                 })
                 .unwrap()));
+
+            assert_eq!(rng.gen_range(0.002..0.0065), 0.00628507741768172);
         }
         rng = SeededDiceRoller::new("other_seed", "step");
         {
@@ -835,6 +851,8 @@ mod tests {
                     roll_method: RollMethod::SimpleRoll,
                 })
                 .unwrap()));
+
+            assert_eq!(rng.gen_range(0.00002..1.5), 0.4207423783034179);
         }
     }
 
@@ -989,5 +1007,39 @@ mod tests {
                 .unwrap()
             ));
         }
+    }
+
+    #[test]
+    fn gen_range_i32_within_bounds() {
+        let mut rng = SeededDiceRoller::new("seed", "test");
+        for _ in 0..1000 {
+            let n: i32 = rng.gen_range(1..=6);
+            assert!(n >= 1 && n <= 6, "Value was: {}", n);
+        }
+    }
+
+    #[test]
+    fn gen_range_f64_within_bounds() {
+        let mut rng = SeededDiceRoller::new("seed", "test");
+        for _ in 0..1000 {
+            let n: f64 = rng.gen_range(0.0..=10.0);
+            assert!(n >= 0.0 && n <= 10.0, "Value was: {}", n);
+        }
+    }
+
+    #[test]
+    fn gen_range_usize_within_bounds() {
+        let mut rng = SeededDiceRoller::new("seed", "test");
+        for _ in 0..1000 {
+            let n: usize = rng.gen_range(10..=100);
+            assert!(n >= 10 && n <= 100, "Value was: {}", n);
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn gen_range_invalid_bounds() {
+        let mut rng = SeededDiceRoller::new("seed", "test");
+        let _: i32 = rng.gen_range(6..=1); // This should panic as the range is invalid
     }
 }
