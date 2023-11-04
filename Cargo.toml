@@ -9,9 +9,9 @@ keywords = ["gamedev", "rng", "seed", "dice", "random"]
 categories = ["game-development"]
 
 [dependencies]
-log = "0.4.17"
+log = "0.4.20"
 rand = "0.8.5"
 rand_pcg = "0.3.1"
 rand_seeder = "0.2.3"
-serde = { version = "1.0.147", features = ["derive"] }
+serde = { version = "1.0.190", features = ["derive"] }
 smart-default = "0.7.1"
