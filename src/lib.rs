@@ -498,6 +498,13 @@ impl SeededDiceRoller {
     }
 
     /// Returns a random number in the given range.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use seeded_dice_roller::SeededDiceRoller;
+    /// let n: usize = SeededDiceRoller::new("seed", "step").gen_range(10..=100);
+    /// ```
     pub fn gen_range<T, R>(&mut self, range: R) -> T
         where
             T: SampleUniform + Display,
